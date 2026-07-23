@@ -27,12 +27,15 @@ SIZE_TITLE = 22   # 二号（封面标题）
 SIZE_H1 = 22       # 二号
 SIZE_H2 = 15       # 小三
 SIZE_H3 = 14       # 四号
+SIZE_H4 = 12       # 小四（与正文同号，靠黑体+加粗区分层级）
 SIZE_BODY = 12     # 小四
 
 FONT_HEADING = '黑体'
 FONT_BODY = '宋体'
 
-HEADING_STYLES = {'Title', 'Heading 1', 'Heading 2', 'Heading 3'}
+# 标题1~4 用黑体区分层级，标题5及以下与正文一样按正文样式处理
+HEADING_STYLES = {'Title', 'Heading 1', 'Heading 2', 'Heading 3', 'Heading 4'}
+BODY_PARAGRAPH_SPACE_AFTER = 12  # 正文段后间距（磅），近似一行高度
 
 
 def extract_xmind(xmind_path, extract_dir):
@@ -159,6 +162,8 @@ def apply_style(paragraph):
         font, size, bold = FONT_HEADING, SIZE_H2, True
     elif style_name == 'Heading 3':
         font, size, bold = FONT_HEADING, SIZE_H3, True
+    elif style_name == 'Heading 4':
+        font, size, bold = FONT_HEADING, SIZE_H4, True
     else:
         font, size, bold = FONT_BODY, SIZE_BODY, False
 
@@ -171,7 +176,7 @@ def apply_style(paragraph):
         # 短语类节点内容两端对齐会被强行拉伸字间距撑满整行，改为左对齐
         pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
         pf.space_before = Pt(0)
-        pf.space_after = Pt(0)
+        pf.space_after = Pt(BODY_PARAGRAPH_SPACE_AFTER)
         pf.line_spacing = 1.0
         pf.left_indent = 0
         set_first_line_indent_chars(paragraph, 2)
