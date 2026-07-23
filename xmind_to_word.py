@@ -109,6 +109,74 @@ def set_first_line_indent_chars(paragraph, chars=2):
         del ind.attrib[qn('w:firstLine')]
 
 
+_CN_DIGITS = '零一二三四五六七八九'
+_CN_UNITS = ['', '十', '百', '千']
+
+
+def chinese_numeral(n):
+    """将 1~9999 的整数转换为中文数字（用于二级标题编号，如 一、二、三）"""
+    if n <= 0:
+        return _CN_DIGITS[0]
+    if 10 <= n < 20:
+        return '十' + (_CN_DIGITS[n % 10] if n % 10 else '')
+
+    s = ''
+    zero_flag = False
+    unit_pos = 0
+    num = n
+    while num > 0:
+        digit = num % 10
+        if digit == 0:
+            if s and not zero_flag:
+                s = '零' + s
+                zero_flag = True
+        else:
+            s = _CN_DIGITS[digit] + _CN_UNITS[unit_pos] + s
+            zero_flag = False
+        unit_pos += 1
+        num //= 10
+    if s.startswith('一十'):
+        s = s[1:]
+    return s
+
+
+def apply_numbering(items):
+    """
+    按父子层级关系为标题添加序号：
+    - 一级标题(H1)：文档中只有唯一一个根节点，不需要区分编号，跳过
+    - 二级标题(H2)：中文数字，如 一、二、三
+    - 三级标题(H3)：两级阿拉伯数字，如 1.1、1.2（首位对应所属二级标题的序号）
+    - 四级标题(H4)：三级阿拉伯数字，如 1.1.1
+    - 五级及以下：不编号，保留原有项目符号缩进
+    """
+    counters = {2: 0, 3: 0, 4: 0}
+
+    for item in items:
+        if 'text' not in item:
+            continue  # 图片节点不参与编号
+
+        heading_level = item['level'] + 1
+
+        if heading_level == 1:
+            continue  # 唯一的一级标题，不编号
+        elif heading_level == 2:
+            counters[2] += 1
+            counters[3] = 0
+            counters[4] = 0
+            label = f'{chinese_numeral(counters[2])}、'
+        elif heading_level == 3:
+            counters[3] += 1
+            counters[4] = 0
+            label = f'{counters[2]}.{counters[3]}  '
+        elif heading_level == 4:
+            counters[4] += 1
+            label = f'{counters[2]}.{counters[3]}.{counters[4]}  '
+        else:
+            continue  # 五级及以下不编号
+
+        item['text'] = label + item['text']
+
+
 def reset_char_spacing(run):
     """将字符间距显式重置为标准（0），避免继承样式或外部来源写入的加宽值"""
     rpr = run._element.get_or_add_rPr()
@@ -195,6 +263,8 @@ def convert(xmind_path, output_path):
         for sheet in data:
             root_topic = sheet.get('rootTopic', {})
             all_items.extend(parse_topic(root_topic, 0))
+
+        apply_numbering(all_items)
 
         doc_title = os.path.splitext(os.path.basename(xmind_path))[0]
         create_word_doc(all_items, output_path, tmp_dir, doc_title=doc_title)
