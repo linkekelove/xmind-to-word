@@ -9,6 +9,7 @@ XMind 转 Word 工具
 
 import sys
 import json
+import re
 import zipfile
 import tempfile
 import shutil
@@ -40,11 +41,26 @@ def extract_xmind(xmind_path, extract_dir):
         zf.extractall(extract_dir)
 
 
+# 全角空格(U+3000)、不间断空格(U+00A0)、零宽空格(U+200B)、
+# 零宽连字/断字(U+200C/200D)、BOM(U+FEFF) 等不可见排版污染字符
+_INVISIBLE_CHARS = re.compile(
+    "[\u3000\u00a0\u200b\u200c\u200d\ufeff]"
+)
+_CONTROL_CHARS = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def clean_text(text):
+    """清除全角空格 / 不间断空格 / 零宽字符 / 控制字符等排版污染"""
+    text = _INVISIBLE_CHARS.sub(' ', text)
+    text = _CONTROL_CHARS.sub('', text)
+    return re.sub(r' {2,}', ' ', text).strip()
+
+
 def parse_topic(topic, level=0):
     """递归解析思维导图节点，保留父子层级关系"""
     result = []
 
-    title = topic.get('title', '')
+    title = clean_text(topic.get('title', ''))
     if title:
         result.append({'level': level, 'text': title})
 
@@ -88,6 +104,16 @@ def set_first_line_indent_chars(paragraph, chars=2):
     ind.set(qn('w:firstLineChars'), str(chars * 100))
     if ind.get(qn('w:firstLine')) is not None:
         del ind.attrib[qn('w:firstLine')]
+
+
+def reset_char_spacing(run):
+    """将字符间距显式重置为标准（0），避免继承样式或外部来源写入的加宽值"""
+    rpr = run._element.get_or_add_rPr()
+    spacing = rpr.find(qn('w:spacing'))
+    if spacing is None:
+        spacing = rpr.makeelement(qn('w:spacing'), {})
+        rpr.append(spacing)
+    spacing.set(qn('w:val'), '0')
 
 
 def create_word_doc(content_list, output_path, resource_dir, doc_title='文档'):
@@ -138,10 +164,12 @@ def apply_style(paragraph):
 
     for run in paragraph.runs:
         set_run_font(run, font, size, bold=bold)
+        reset_char_spacing(run)
 
     if style_name not in HEADING_STYLES:
         pf = paragraph.paragraph_format
-        pf.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        # 短语类节点内容两端对齐会被强行拉伸字间距撑满整行，改为左对齐
+        pf.alignment = WD_ALIGN_PARAGRAPH.LEFT
         pf.space_before = Pt(0)
         pf.space_after = Pt(0)
         pf.line_spacing = 1.0
