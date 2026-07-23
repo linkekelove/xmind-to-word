@@ -1,0 +1,26 @@
+name: Bug 反馈 / Bug Report
+description: 报告脚本运行中的问题 / Report a problem with the script
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述 / Description
+      description: 发生了什么问题？/ What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to Reproduce
+      description: 使用的命令、输入文件情况等 / Command used, input file details, etc.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 运行环境 / Environment
+      description: 操作系统、Python 版本 / OS, Python version
+    validations:
+      required: true
