@@ -18,6 +18,21 @@ pip install -r requirements.txt
 python xmind_to_word.py 输入文件.xmind 输出文件.docx
 ```
 
+### 常见问题：提示"找不到文件"（No such file or directory）
+
+如果终端所在目录不是本脚本所在目录，`pip install -r requirements.txt` 和 `python xmind_to_word.py ...` 都会报“找不到文件”，因为它们默认在**当前工作目录**里查找文件。
+
+**命令行 / PyCharm 终端：**
+```bash
+cd 本仓库所在目录          # 例如 cd xmind-to-word
+pip install -r requirements.txt
+python xmind_to_word.py 输入文件.xmind 输出文件.docx
+```
+输入、输出文件路径也要写成相对于该目录的路径（或直接用绝对路径），否则同样会报错。
+
+**PyCharm 运行配置（Run Configuration）：**
+如果是通过 PyCharm 的运行按钮而不是终端启动脚本，需要把 Run Configuration 里的 **Working directory** 设置为本脚本所在目录，而不是整个工作区/项目的根目录，否则会出现一样的报错。
+
 ## 依赖
 
 - Python 3
@@ -44,6 +59,21 @@ A Python script that converts XMind mind maps (`.xmind`) into Word documents (`.
 pip install -r requirements.txt
 python xmind_to_word.py input.xmind output.docx
 ```
+
+### Troubleshooting: "No such file or directory"
+
+If your terminal's current directory isn't the directory containing this script, both `pip install -r requirements.txt` and `python xmind_to_word.py ...` will fail with a "file not found" error, since they look for files relative to the **current working directory**.
+
+**Command line / PyCharm terminal:**
+```bash
+cd path/to/this/repo          # e.g. cd xmind-to-word
+pip install -r requirements.txt
+python xmind_to_word.py input.xmind output.docx
+```
+Input/output file paths must also be relative to that directory (or given as absolute paths), or the same error will occur.
+
+**PyCharm Run Configuration:**
+If you launch the script via PyCharm's Run button instead of the terminal, set the Run Configuration's **Working directory** to this script's directory, not the overall workspace/project root, to avoid the same error.
 
 ## Requirements
 
